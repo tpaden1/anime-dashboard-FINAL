@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anime Discovery Dashboard - Ultimate Edition</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        :root {
+            --primary: #667eea;
+            --secondary: #764ba2;
+            --bg-start: #667eea;
+            --bg-end: #764ba2;
+            --text: #2d3748;
+            --text-light: #718096;
+            --border: #e2e8f0;
+        }
+        
+        /* GENRE COLOR THEMES - Intuitive associations */
+        .theme-action { --primary: #e74c3c; --secondary: #c0392b; --bg-start: #e74c3c; --bg-end: #c0392b; }
+        .theme-adventure { --primary: #27ae60; --secondary: #229954; --bg-start: #27ae60; --bg-end: #229954; }
+        .theme-comedy { --primary: #f1c40f; --secondary: #f39c12; --bg-start: #f1c40f; --bg-end: #f39c12; }
+        .theme-drama { --primary: #3498db; --secondary: #2980b9; --bg-start: #3498db; --bg-end: #2980b9; }
+        .theme-fantasy { --primary: #9b59b6; --secondary: #8e44ad; --bg-start: #9b59b6; --bg-end: #8e44ad; }
+        .theme-romance { --primary: #e91e63; --secondary: #c2185b; --bg-start: #e91e63; --bg-end: #c2185b; }
+        .theme-scifi { --primary: #1e3a8a; --secondary: #1e40af; --bg-start: #1e3a8a; --bg-end: #6366f1; }
+        .theme-sports { --primary: #2563eb; --secondary: #1d4ed8; --bg-start: #2563eb; --bg-end: #1d4ed8; }
+        .theme-thriller { --primary: #6b7280; --secondary: #4b5563; --bg-start: #6b7280; --bg-end: #4b5563; }
+        .theme-horror { --primary: #1f1f1f; --secondary: #000000; --bg-start: #1f1f1f; --bg-end: #000000; }
+        .theme-mystery { --primary: #4a5568; --secondary: #2d3748; --bg-start: #4a5568; --bg-end: #2d3748; }
+        .theme-supernatural { --primary: #7c3aed; --secondary: #6d28d9; --bg-start: #7c3aed; --bg-end: #6d28d9; }
+        .theme-awardwinning { --primary: #d97706; --secondary: #b45309; --bg-start: #f59e0b; --bg-end: #d97706; }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, var(--bg-start) 0%, var(--bg-end) 100%);
+            min-height: 100vh;
+            padding: 20px;
+            transition: background 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .container { max-width: 1600px; margin: 0 auto; }
+        
+        .header {
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            text-align: center;
+            color: white;
+            margin-bottom: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            animation: fadeIn 0.6s ease;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.95;
+        }
+        
+        .header a { color: white; text-decoration: underline; font-weight: bold; }
+        
+        .welcome-section {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            text-align: center;
+            animation: fadeIn 0.6s ease 0.2s backwards;
+        }
+        
+        .welcome-section h2 {
+            color: var(--primary);
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            transition: color 0.6s;
+        }
+        
+        .welcome-section p { color: var(--text-light); font-size: 1.1rem; }
+        
+        .breadcrumb {
+            background: white;
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            display: none;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .breadcrumb.active { display: flex; }
+        
+        .breadcrumb button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .breadcrumb button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+        
+        .breadcrumb span { color: var(--text-light); }
+        
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            animation: fadeIn 0.6s ease;
+        }
+        
+        .filters {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 0.85rem;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat {
+            text-align: center;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, rgba(102,126,234,0.1) 0%, rgba(118,75,162,0.1) 100%);
+            border-radius: 15px;
+            animation: fadeIn 0.5s ease;
+            animation-fill-mode: backwards;
+        }
+        
+        .stat:nth-child(1) { animation-delay: 0.1s; }
+        .stat:nth-child(2) { animation-delay: 0.2s; }
+        .stat:nth-child(3) { animation-delay: 0.3s; }
+        .stat:nth-child(4) { animation-delay: 0.4s; }
+        
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            transition: all 0.6s;
+        }
+        
+        .stat-label {
+            font-size: 0.95rem;
+            color: var(--text-light);
+            margin-top: 0.5rem;
+            font-weight: 600;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            overflow-x: auto;
+        }
+        
+        .tab {
+            padding: 0.75rem 1.5rem;
+            background: #f7fafc;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: var(--text);
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+        
+        .tab:hover {
+            background: #e2e8f0;
+            transform: translateY(-2px);
+        }
+        
+        .tab.active {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 500px;
+            margin-bottom: 2rem;
+        }
+        
+        .content-section { display: none; }
+        .content-section.active { display: block; }
+        
+        h2 {
+            color: var(--text);
+            margin-bottom: 0.5rem;
+            font-size: 1.8rem;
+        }
+        
+        .tab-subtitle {
+            color: var(--text-light);
+            font-size: 0.95rem;
+            margin-bottom: 1.5rem;
+            font-style: italic;
+        }
+        
+        /* Comparison Controls */
+        .comparison-controls {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .genre-checkbox {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            background: #f7fafc;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            user-select: none;
+        }
+        
+        .genre-checkbox:hover {
+            background: #e2e8f0;
+            border-color: var(--primary);
+        }
+        
+        .genre-checkbox.selected {
+            background: linear-gradient(135deg, rgba(102,126,234,0.2) 0%, rgba(118,75,162,0.2) 100%);
+            border-color: var(--primary);
+        }
+        
+        .genre-checkbox input[type="checkbox"] {
+            width: auto;
+            margin-right: 0.5rem;
+            cursor: pointer;
+        }
+        
+        /* Data Table */
+        .table-controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            align-items: center;
+        }
+        
+        .table-controls input {
+            flex: 1;
+        }
+        
+        .table-controls select {
+            width: auto;
+            min-width: 150px;
+        }
+        
+        .data-table-container {
+            overflow-x: auto;
+            max-height: 600px;
+            overflow-y: auto;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+        
+        thead {
+            position: sticky;
+            top: 0;
+            background: var(--primary);
+            color: white;
+            z-index: 10;
+        }
+        
+        th {
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.3s;
+        }
+        
+        th:hover {
+            background: var(--secondary);
+        }
+        
+        th::after {
+            content: ' ↕';
+            opacity: 0.5;
+        }
+        
+        td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        tbody tr {
+            transition: all 0.2s;
+        }
+        
+        tbody tr:hover {
+            background: rgba(102,126,234,0.05);
+            cursor: pointer;
+        }
+        
+        /* Search Results */
+        .search-results {
+            position: absolute;
+            background: white;
+            border: 2px solid var(--primary);
+            border-radius: 10px;
+            max-height: 400px;
+            overflow-y: auto;
+            z-index: 100;
+            width: 100%;
+            margin-top: 0.5rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            display: none;
+        }
+        
+        .search-results.active { display: block; }
+        
+        .search-result-item {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .search-result-item:hover {
+            background: rgba(102,126,234,0.1);
+        }
+        
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+        
+        .search-highlight {
+            background: yellow;
+            font-weight: bold;
+        }
+        
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            animation: fadeIn 0.3s;
+        }
+        
+        .modal.active {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 20px;
+            max-width: 900px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: slideUp 0.3s;
+        }
+        
+        .modal-close {
+            float: right;
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--text-light);
+            cursor: pointer;
+            line-height: 1;
+            transition: color 0.3s;
+        }
+        
+        .modal-close:hover {
+            color: var(--primary);
+        }
+        
+        .modal-title {
+            font-size: 2rem;
+            color: var(--text);
+            margin-bottom: 1.5rem;
+            clear: both;
+        }
+        
+        .modal-section {
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background: rgba(102,126,234,0.05);
+            border-radius: 10px;
+        }
+        
+        .modal-label {
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
+        
+        .google-btn {
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+        
+        .google-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(102,126,234,0.4);
+        }
+        
+        .recommendation-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .rec-card {
+            padding: 1rem;
+            background: linear-gradient(135deg, rgba(102,126,234,0.1) 0%, rgba(118,75,162,0.1) 100%);
+            border-radius: 10px;
+            border: 2px solid var(--border);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .rec-card:hover {
+            border-color: var(--primary);
+            transform: scale(1.05);
+        }
+        
+        .rec-title {
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 0.5rem;
+        }
+        
+        .rec-info {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+        
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-light);
+        }
+        
+        .spinner {
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .filters {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .tabs {
+                font-size: 0.85rem;
+            }
+            
+            .tab {
+                padding: 0.6rem 1rem;
+            }
+            
+            .comparison-controls {
+                font-size: 0.85rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎬 ANIME DISCOVERY DASHBOARD</h1>
+            <p>Explore <a href="https://www.kaggle.com/datasets/quanthan/top-15000-ranked-anime-dataset-update-to-32025" target="_blank">14,382 Anime</a> • Dynamic Genre Theming • Advanced Analytics</p>
+        </div>
+
+        <div class="welcome-section">
+            <h2>Discover Your Next Favorite Anime</h2>
+            <p>Search, filter, and explore comprehensive insights with intelligent recommendations</p>
+            <button onclick="randomAnime()" style="margin-top: 1rem; padding: 0.75rem 2rem; background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); color: white; border: none; border-radius: 10px; font-size: 1.1rem; font-weight: 600; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+                🎲 Random Anime (SFW)
+            </button>
+        </div>
+
+        <div class="breadcrumb" id="breadcrumb">
+            <button onclick="clearFilters()">← Back to All Anime</button>
+            <span id="breadcrumbText"></span>
+        </div>
+
+        <div class="card">
+            <div class="filters">
+                <div style="position: relative;">
+                    <input type="text" id="searchInput" placeholder="🔍 Search all 14,382 anime by title...">
+                    <div id="searchResults" class="search-results"></div>
+                </div>
+                <select id="genreFilter">
+                    <option value="All">All Genres</option>
+                </select>
+                <select id="typeFilter">
+                    <option value="All">All Types</option>
+                </select>
+                <select id="episodeFilter">
+                    <option value="All">All Episodes</option>
+                    <option value="1-12">1-12 episodes</option>
+                    <option value="13-26">13-26 episodes</option>
+                    <option value="27-52">27-52 episodes</option>
+                    <option value="53-100">53-100 episodes</option>
+                    <option value="101-200">101-200 episodes</option>
+                    <option value="200+">200+ episodes</option>
+                </select>
+            </div>
+
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-value" id="totalAnime">14382</div>
+                    <div class="stat-label">Total Anime</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="avgScore">0.00</div>
+                    <div class="stat-label">Avg Rating</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="filteredCount">14382</div>
+                    <div class="stat-label">Filtered Results</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('genre')">📊 Genre Analysis</button>
+            <button class="tab" onclick="showTab('comparison')">⚖️ Genre Comparison</button>
+            <button class="tab" onclick="showTab('distribution')">📈 Rating Distribution</button>
+            <button class="tab" onclick="showTab('episode')">📺 Episode Analysis</button>
+            <button class="tab" onclick="showTab('type')">🎬 Type Analysis</button>
+            <button class="tab" onclick="showTab('scatter')">🎯 Rating vs Popularity</button>
+            <button class="tab" onclick="showTab('topAnime')">🏆 Top 50 Anime</button>
+            <button class="tab" onclick="showTab('dataTable')">📋 Full Dataset</button>
+        </div>
+
+        <div id="genre" class="card content-section active">
+            <h2>⭐ Average Rating by Genre</h2>
+            <p class="tab-subtitle">Click any bar to filter by genre and activate dynamic color theming</p>
+            <div class="chart-container">
+                <canvas id="genreChart"></canvas>
+            </div>
+        </div>
+
+        <div id="comparison" class="card content-section">
+            <h2>⚖️ Compare Genres</h2>
+            <p class="tab-subtitle">Select multiple genres to compare distributions (demonstrates perception principles)</p>
+            <div class="comparison-controls" id="genreCheckboxes"></div>
+            <div class="chart-container">
+                <canvas id="comparisonChart"></canvas>
+            </div>
+        </div>
+
+        <div id="distribution" class="card content-section">
+            <h2>📈 Rating Distribution</h2>
+            <p class="tab-subtitle">Histogram showing score distribution • Identifies outliers and spread</p>
+            <div class="chart-container">
+                <canvas id="distributionChart"></canvas>
+            </div>
+        </div>
+
+        <div id="episode" class="card content-section">
+            <h2>📊 Average Rating by Episode Count</h2>
+            <p class="tab-subtitle">Discover optimal episode length for quality anime</p>
+            <div class="chart-container">
+                <canvas id="episodeChart"></canvas>
+            </div>
+        </div>
+
+        <div id="type" class="card content-section">
+            <h2>🎬 Average Rating by Type</h2>
+            <p class="tab-subtitle">Compare TV Series, Movies, OVAs, and Specials</p>
+            <div class="chart-container">
+                <canvas id="typeChart"></canvas>
+            </div>
+        </div>
+
+        <div id="scatter" class="card content-section">
+            <h2>🎯 Rating vs Popularity</h2>
+            <p class="tab-subtitle">Hover to see anime names • Click dots for details • Find hidden gems top-left</p>
+            <div class="chart-container">
+                <canvas id="scatterChart"></canvas>
+            </div>
+        </div>
+
+        <div id="topAnime" class="card content-section">
+            <h2>🏆 Top 50 Anime by Rating</h2>
+            <p class="tab-subtitle">Click any bar for detailed information and recommendations</p>
+            <div class="chart-container">
+                <canvas id="topAnimeChart"></canvas>
+            </div>
+        </div>
+
+        <div id="dataTable" class="card content-section">
+            <h2>📋 Full Dataset View</h2>
+            <p class="tab-subtitle">All 14,382 anime • Click headers to sort • Click rows for details</p>
+            <div class="table-controls">
+                <input type="text" id="tableSearch" placeholder="Filter table...">
+                <select id="tableSortBy">
+                    <option value="s">Sort by Rating</option>
+                    <option value="m">Sort by Popularity</option>
+                    <option value="n">Sort by Name</option>
+                    <option value="y">Sort by Year</option>
+                </select>
+            </div>
+            <div class="data-table-container">
+                <table id="animeTable">
+                    <thead>
+                        <tr>
+                            <th onclick="sortTable('n')">Title</th>
+                            <th onclick="sortTable('s')">Rating</th>
+                            <th onclick="sortTable('g')">Genre</th>
+                            <th onclick="sortTable('t')">Type</th>
+                            <th onclick="sortTable('e')">Episodes</th>
+                            <th onclick="sortTable('m')">Members</th>
+                            <th onclick="sortTable('y')">Year</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="animeModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeModal()">&times;</span>
+            <h2 class="modal-title" id="modalTitle">Anime Title</h2>
+            
+            <div class="modal-section">
+                <div class="modal-label">📊 Statistics</div>
+                <div id="modalStats"></div>
+            </div>
+
+            <div class="modal-section">
+                <div class="modal-label">🔍 More Information</div>
+                <button class="google-btn" onclick="googleSearch()">
+                    Search on Google 🔎
+                </button>
+            </div>
+
+            <div class="modal-section">
+                <div class="modal-label">📈 Comparison with Similar Anime</div>
+                <div style="height: 300px;">
+                    <canvas id="comparisonModalChart"></canvas>
+                </div>
+            </div>
+
+            <div class="modal-section">
+                <div class="modal-label">💡 You Might Also Like</div>
+                <div id="recommendations" class="recommendation-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="loadingIndicator" class="card loading">
+        <div class="spinner"></div>
+        <p>Loading 14,382 anime...</p>
+    </div>
+
+    <script src="dashboard.js"></script>
+</body>
+</html>
